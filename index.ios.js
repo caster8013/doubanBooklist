@@ -5,7 +5,7 @@
  */
 
 import React, { Component } from 'react';
-import { AppRegistry, View ,TextInput,Text,Switch,ScrollView,ListView,Image,StyleSheet} from 'react-native';
+import { AppRegistry, View,ScrollView,TextInput,Text,Switch,NavigatorIOS,ListView,Image,StyleSheet} from 'react-native';
 
 class Logo extends Component {
   render() {
@@ -45,7 +45,7 @@ class ListViewBasics extends Component {
   }
 }
 
-class filterableBookList extends Component {
+class MainPage extends Component {
 
   constructor(props){
     super(props);
@@ -97,35 +97,54 @@ class filterableBookList extends Component {
 
   render() {
     return (
-      <ScrollView>
-        <Logo style={styles.logoView}/>
+      <ScrollView style={{flex:1}}>
+        <Logo style={{flex:1}}/>
         <TextInput
-          style={{height: 40}}
+          style={{flex:1,height:40}}
           value={this.state.text}
           placeholder="Type here some key words!"
           onChangeText={this.textChange.bind(this)}
         />
         <Switch
+          //style={{flex: 1, backgroundColor: 'powderblue'}}
           value={this.state.flag}
           onValueChange={this.switchChange.bind(this)}
         />
-        <ListViewBasics bookData={this.state.dataSource} />
+        <ListViewBasics
+          //style={{flex:5}}
+          bookData={this.state.dataSource}
+          />
       </ScrollView>
     );
   }
 };
 
+class filterableBookList extends React.Component {
+  render() {
+    return (
+      <NavigatorIOS
+        style={styles.MainContainer}
+        initialRoute={{
+          title: 'Main page',
+          component: MainPage,
+        }}
+      />
+    );
+  }
+}
+
 var styles = StyleSheet.create({
+  MainContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
   logo:{
-    height:30,
     width:153,
+    height:30,
   },
   base: {
     width: 108,
     height: 137,
-  },
-  logoView:{
-    padding:50,
   },
   container: {
     flex: 1,
@@ -135,7 +154,7 @@ var styles = StyleSheet.create({
     backgroundColor: '#F5FCFF',
   },
   rightContainer: {
-    flex: 1,
+    flex: 3,
   },
   title: {
     fontSize: 20,
