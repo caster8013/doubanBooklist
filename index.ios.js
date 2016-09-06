@@ -5,7 +5,12 @@
  */
 
 import React, { Component } from 'react';
-import { AppRegistry, View,ScrollView,TextInput,Text,Switch,NavigatorIOS,ListView,Image,StyleSheet} from 'react-native';
+import { AppRegistry, View, ScrollView,
+         TextInput, Text, Switch,
+         NavigatorIOS, ListView, Image,
+         StyleSheet, Platform, TouchableHighlight,
+         TouchableNativeFeedback
+       } from 'react-native';
 
 class Logo extends Component {
   render() {
@@ -18,18 +23,71 @@ class Logo extends Component {
   }
 }
 
+class BookScreen extends Component{
+  arrayToString(arr){
+    let str;
+    for(a in arr){
+      str = a + " , ";
+
+    }
+  }
+  render(){
+    return (
+      <ScrollView>
+        <View>
+          <Image source={{uri:this.props.book.image}}/>
+          <Text>Title:{this.props.book.title}</Text>
+          <Text>Subtitle:{this.props.book.title}</Text>
+          <Text>Author:{this.props.book.author.toString()}</Text>
+          <Text>Publisher:{this.props.book.publisher}</Text>
+          <Text>Price:{this.props.book.price}</Text>
+        </View>
+        </View>{this.props.book.summary}</View>
+      </ScrollView>
+    );
+  }
+}
+
+class BookCell extends Component{
+  render(){
+    var TouchableElement = TouchableHighlight;
+    if (Platform.OS === 'android') {
+      TouchableElement = TouchableNativeFeedback;
+    }
+    return (
+      <TouchableElement
+      style={styles.container}
+      onPress={this.props.onSelect}>
+          <Image source={{uri:this.props.book.image}} style={[styles.base, {overflow: 'visible'}]}/>
+          <View style={styles.rightContainer}>
+            <Text>{this.props.book.title}</Text>
+            <Text>{this.props.book.author}</Text>
+            <Text>{this.props.book.rating.average}</Text>
+          </View>
+      </TouchableElement>
+    );
+  }
+}
+
 class ListViewBasics extends Component {
   listViewRender(book){
       return(
-        <View key={book.id} style={styles.container}>
-          <Image source={{uri:book.image}} style={[styles.base, {overflow: 'visible'}]}/>
-          <View style={styles.rightContainer}>
-            <Text>{book.title}</Text>
-            <Text>{book.author}</Text>
-            <Text>{book.rating.average}</Text>
-          </View>
-        </View>
+        <BookCell
+          key={book.id}
+          onSelect={() => this.selectBook(book)}
+          book={book}
+        />
       );
+  }
+
+  selectBook(book){
+    if (Platform.OS === 'ios') {
+      this.props.navigator.push({
+        title: book.title,
+        component: BookScreen,
+        passProps: {book},
+      });
+    }
   }
 
   render() {
