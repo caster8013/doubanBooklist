@@ -17,20 +17,12 @@ class Logo extends Component {
     let pic = {
       uri: 'https://img3.doubanio.com/f/shire/8308f83ca66946299fc80efb1f10ea21f99ec2a5/pics/nav/lg_main_a11_1.png'
     };
-    return (
-      <Image source={pic} style={[styles.logo, {overflow: 'visible'}]} />
-    );
+    return (<Image source={pic} style={[styles.logo, {overflow: 'visible'}]}/>);
   }
 }
 
 class BookScreen extends Component{
-  arrayToString(arr){
-    let str;
-    for(a in arr){
-      str = a + " , ";
-
-    }
-  }
+  //let author = this.props.book.author.toString();
   render(){
     return (
       <ScrollView>
@@ -38,11 +30,11 @@ class BookScreen extends Component{
           <Image source={{uri:this.props.book.image}}/>
           <Text>Title:{this.props.book.title}</Text>
           <Text>Subtitle:{this.props.book.title}</Text>
-          <Text>Author:{this.props.book.author.toString()}</Text>
+          <Text>Author:{this.props.book.author}</Text>
           <Text>Publisher:{this.props.book.publisher}</Text>
           <Text>Price:{this.props.book.price}</Text>
         </View>
-        </View>{this.props.book.summary}</View>
+        <View>{this.props.book.summary}</View>
       </ScrollView>
     );
   }
@@ -55,50 +47,16 @@ class BookCell extends Component{
       TouchableElement = TouchableNativeFeedback;
     }
     return (
-      <TouchableElement
-      style={styles.container}
-      onPress={this.props.onSelect}>
+      <TouchableElement onPress={this.props.onSelect}>
+        <View style={styles.container}>
           <Image source={{uri:this.props.book.image}} style={[styles.base, {overflow: 'visible'}]}/>
           <View style={styles.rightContainer}>
             <Text>{this.props.book.title}</Text>
             <Text>{this.props.book.author}</Text>
             <Text>{this.props.book.rating.average}</Text>
           </View>
+        </View>
       </TouchableElement>
-    );
-  }
-}
-
-class ListViewBasics extends Component {
-  listViewRender(book){
-      return(
-        <BookCell
-          key={book.id}
-          onSelect={() => this.selectBook(book)}
-          book={book}
-        />
-      );
-  }
-
-  selectBook(book){
-    if (Platform.OS === 'ios') {
-      this.props.navigator.push({
-        title: book.title,
-        component: BookScreen,
-        passProps: {book},
-      });
-    }
-  }
-
-  render() {
-    return (
-      <View style={{paddingTop: 22}}>
-        <ListView
-          enableEmptySections={true}
-          dataSource={this.props.bookData}
-          renderRow={this.listViewRender}
-        />
-      </View>
     );
   }
 }
@@ -114,6 +72,7 @@ class MainPage extends Component {
       flag:false,
       dataSource: this.ds.cloneWithRows([])
     };
+    //this.selectBook = this.selectBook.bind(this);
   }
 
   componentDidMount(){
@@ -153,6 +112,16 @@ class MainPage extends Component {
     });
   }
 
+  selectBook(book){
+    if (Platform.OS === 'ios') {
+      this.props.navigator.push({
+        title: book.title,
+        component: BookScreen,
+        passProps: {book},
+      });
+    }
+  }
+
   render() {
     return (
       <ScrollView style={{flex:1}}>
@@ -168,10 +137,20 @@ class MainPage extends Component {
           value={this.state.flag}
           onValueChange={this.switchChange.bind(this)}
         />
-        <ListViewBasics
-          //style={{flex:5}}
-          bookData={this.state.dataSource}
+        <View style={{paddingTop: 22}}>
+          <ListView
+            enableEmptySections={true}
+            dataSource={this.state.dataSource}
+            renderRow={
+              (book)=>
+                <BookCell
+                  key={book.id}
+                  onSelect={()=>this.selectBook(book)}
+                  book={book}
+                />
+            }
           />
+        </View>
       </ScrollView>
     );
   }
