@@ -22,19 +22,18 @@ class Logo extends Component {
 }
 
 class BookScreen extends Component{
-  //let author = this.props.book.author.toString();
   render(){
     return (
       <ScrollView>
         <View>
-          <Image source={{uri:this.props.book.image}}/>
+          <Image source={{uri:this.props.book.image}} style={styles.base}/>
           <Text>Title:{this.props.book.title}</Text>
           <Text>Subtitle:{this.props.book.title}</Text>
           <Text>Author:{this.props.book.author}</Text>
           <Text>Publisher:{this.props.book.publisher}</Text>
           <Text>Price:{this.props.book.price}</Text>
         </View>
-        <View>{this.props.book.summary}</View>
+        <Text>{this.props.book.summary}</Text>
       </ScrollView>
     );
   }
@@ -72,7 +71,6 @@ class MainPage extends Component {
       flag:false,
       dataSource: this.ds.cloneWithRows([])
     };
-    //this.selectBook = this.selectBook.bind(this);
   }
 
   componentDidMount(){
@@ -114,6 +112,7 @@ class MainPage extends Component {
 
   selectBook(book){
     if (Platform.OS === 'ios') {
+      console.log(book);
       this.props.navigator.push({
         title: book.title,
         component: BookScreen,
