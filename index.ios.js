@@ -24,16 +24,21 @@ class Logo extends Component {
 class BookScreen extends Component{
   render(){
     return (
-      <ScrollView>
-        <View>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.mainSection}>
           <Image source={{uri:this.props.book.image}} style={styles.base}/>
-          <Text>Title:{this.props.book.title}</Text>
-          <Text>Subtitle:{this.props.book.title}</Text>
-          <Text>Author:{this.props.book.author}</Text>
-          <Text>Publisher:{this.props.book.publisher}</Text>
-          <Text>Price:{this.props.book.price}</Text>
+          <View style={styles.contentContainer}>
+            <Text>Title:{this.props.book.title}</Text>
+            <Text>Subtitle:{this.props.book.title}</Text>
+            <Text>Author:{this.props.book.author}</Text>
+            <Text>Publisher:{this.props.book.publisher}</Text>
+            <Text>Price:{this.props.book.price}</Text>
+          </View>
         </View>
-        <Text>{this.props.book.summary}</Text>
+        <View style={styles.separator}/>
+        <View>
+          <Text style={styles.mpaaText}>{this.props.book.summary}</Text>
+        </View>
       </ScrollView>
     );
   }
@@ -96,7 +101,7 @@ class MainPage extends Component {
   }
 
   getInternetData(keyWord){
-    fetch("https://api.douban.com/v2/book/search?q="+keyWord)
+    fetch("https://api.douban.com/v2/book/search?q="+keyWord+"&count=100")
     .then((response) => response.json())
     .then((data)=>{
       console.log(data);
@@ -123,7 +128,7 @@ class MainPage extends Component {
 
   render() {
     return (
-      <ScrollView style={{flex:1}}>
+      <ScrollView style={{flex:1,padding:10}}>
         <Logo style={{flex:1}}/>
         <TextInput
           style={{flex:1,height:40}}
@@ -131,14 +136,20 @@ class MainPage extends Component {
           placeholder="Type here some key words!"
           onChangeText={this.textChange.bind(this)}
         />
-        <Switch
-          //style={{flex: 1, backgroundColor: 'powderblue'}}
-          value={this.state.flag}
-          onValueChange={this.switchChange.bind(this)}
-        />
+        <View style={styles.switchWrapper}>
+          <Switch
+            value={this.state.flag}
+            onValueChange={this.switchChange.bind(this)}
+          />
+          <Text style={{fontSize:20,padding:8}}>8星以上</Text>
+        </View>
         <View style={{paddingTop: 22}}>
           <ListView
             enableEmptySections={true}
+            renderSeparator={
+              (sectionID,rowID,adjacentRowHighlighted)=>
+                <View key={'sep_'+sectionID+'_'+rowID} style={styles.rowSeparator}></View>
+              }
             dataSource={this.state.dataSource}
             renderRow={
               (book)=>
@@ -191,6 +202,7 @@ var styles = StyleSheet.create({
   },
   rightContainer: {
     flex: 3,
+    padding:5,
   },
   title: {
     fontSize: 20,
@@ -199,6 +211,31 @@ var styles = StyleSheet.create({
   },
   year: {
     textAlign: 'center',
+  },
+  contentContainer:{
+    padding: 10,
+  },
+  mainSection: {
+    flexDirection: 'row',
+  },
+  separator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 10,
+  },
+  mpaaText: {
+    fontFamily: 'Palatino',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  switchWrapper:{
+    flexDirection:'row',
+    marginBottom:15,
+  },
+  rowSeparator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    height: 1,
+    marginLeft: 4,
   },
 });
 
