@@ -9,7 +9,7 @@ import { AppRegistry, View, ScrollView,
          TextInput, Text, Switch,
          NavigatorIOS, ListView, Image,
          StyleSheet, Platform, TouchableHighlight,
-         TouchableNativeFeedback
+         TouchableNativeFeedback,ActivityIndicator,
        } from 'react-native';
 
 class Logo extends Component {
@@ -51,16 +51,18 @@ class BookCell extends Component{
       TouchableElement = TouchableNativeFeedback;
     }
     return (
-      <TouchableElement onPress={this.props.onSelect}>
-        <View style={styles.container}>
-          <Image source={{uri:this.props.book.image}} style={[styles.base, {overflow: 'visible'}]}/>
-          <View style={styles.rightContainer}>
-            <Text>{this.props.book.title}</Text>
-            <Text>{this.props.book.author}</Text>
-            <Text>{this.props.book.rating.average}</Text>
+      <View>
+        <TouchableElement onPress={this.props.onSelect}>
+          <View style={styles.container}>
+            <Image source={{uri:this.props.book.image}} style={[styles.base, {overflow: 'visible'}]}/>
+            <View style={styles.rightContainer}>
+              <Text>{this.props.book.title}</Text>
+              <Text>{this.props.book.author}</Text>
+              <Text>{this.props.book.rating.average}</Text>
+            </View>
           </View>
-        </View>
-      </TouchableElement>
+        </TouchableElement>
+      </View>
     );
   }
 }
@@ -72,10 +74,14 @@ class MainPage extends Component {
     this.timeoutID = null;
     this.ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
     this.state = {
+      isLoading:false,
       text:"programming",
       flag:false,
       dataSource: this.ds.cloneWithRows([])
     };
+  }
+  _getUrlForQuery(tag,start){
+      return "https://api.douban.com/v2/book/search?q="+tag+"&start="+start;
   }
 
   componentDidMount(){
@@ -95,20 +101,21 @@ class MainPage extends Component {
   }
 
   switchChange(switchButton){
-    console.log(switchButton);
     this.setState({flag:switchButton});
     this.getInternetData(this.state.text);
   }
 
   getInternetData(keyWord){
-    fetch("https://api.douban.com/v2/book/search?q="+keyWord+"&count=100")
+    this.setState({isLoading:true});
+    fetch(this._getUrlForQuery(keyWord))
     .then((response) => response.json())
     .then((data)=>{
       console.log(data);
       let _books = data.books.filter(
         (book)=>{ if(!this.state.flag || book.rating.average >= 8.0) return true; else return false;}
       );
-      this.setState({dataSource:this.ds.cloneWithRows(_books)});
+      this.setState({dataSource:this.ds.cloneWithRows(_books),isLoading:false});
+      this.isLoading = false;
     })
     .catch((error) => {
       console.log("getInternetData function error: "+error);
@@ -128,14 +135,21 @@ class MainPage extends Component {
 
   render() {
     return (
-      <ScrollView style={{flex:1,padding:10}}>
-        <Logo style={{flex:1}}/>
+      <ScrollView style={[styles.MainContainer,{padding:5}]}>
+        <Logo style={styles.MainContainer}/>
+        <View style={styles.searchBar}>
         <TextInput
-          style={{flex:1,height:40}}
+          style={styles.searchBarInput}
+          autoCapitalize="none"
+          autoCorrect={false}
           value={this.state.text}
           placeholder="Type here some key words!"
           onChangeText={this.textChange.bind(this)}
+          onFocus={() =>
+            this.refs.listview && this.refs.listview.getScrollResponder().scrollTo({ x: 0, y: 0 })}
         />
+        <ActivityIndicator animating={this.state.isLoading} style={styles.spinner}/>
+        </View>
         <View style={styles.switchWrapper}>
           <Switch
             value={this.state.flag}
@@ -143,8 +157,9 @@ class MainPage extends Component {
           />
           <Text style={{fontSize:20,padding:8}}>8星以上</Text>
         </View>
-        <View style={{paddingTop: 22}}>
+        <View style={{paddingTop: 5}}>
           <ListView
+            ref="listview"
             enableEmptySections={true}
             renderSeparator={
               (sectionID,rowID,adjacentRowHighlighted)=>
@@ -230,12 +245,27 @@ var styles = StyleSheet.create({
   },
   switchWrapper:{
     flexDirection:'row',
-    marginBottom:15,
+    //marginBottom:15,
   },
   rowSeparator: {
     backgroundColor: 'rgba(0, 0, 0, 0.1)',
     height: 1,
     marginLeft: 4,
+  },
+  searchBar: {
+    //marginTop: 64,
+    padding: 3,
+    paddingLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchBarInput: {
+    fontSize: 15,
+    flex: 1,
+    height: 30,
+  },
+  spinner: {
+    width: 30,
   },
 });
 
