@@ -12,6 +12,12 @@ import { AppRegistry, View, ScrollView,
          TouchableNativeFeedback,ActivityIndicator,
        } from 'react-native';
 
+var cache = {
+  totalForQuery:{},
+  dataForQuery:{},
+};
+var loading = {};
+
 class Logo extends Component {
   render() {
     let pic = {
@@ -75,62 +81,129 @@ class MainPage extends Component {
     this.ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
     this.state = {
       isLoading:false,
-      text:"programming",
+      isLoadingTail:false,
+      text:"life",
       flag:false,
       dataSource: this.ds.cloneWithRows([])
     };
   }
+
   _getUrlForQuery(tag,start){
-      return "https://api.douban.com/v2/book/search?q="+tag+"&start="+start;
+      return !start ? "https://api.douban.com/v2/book/search?q="+tag :
+        "https://api.douban.com/v2/book/search?q="+tag+"&start="+start;
   }
 
   componentDidMount(){
-    this.getInternetData("programming");
+    console.log("componentDidMount");
+    this.textChange("life");
   }
 
   textChange(input){
     let key = input.trim().toLowerCase();
+    this.timeoutID && clearTimeout(this.timeoutID);
     if(key){
       this.setState({text:key});
-      this.timeoutID && clearTimeout(this.timeoutID);
-      this.timeoutID = setTimeout(() => this.getInternetData(key), 500);
+      console.log("mark");
+      this.timeoutID = setTimeout(() => this.getData(key), 500);
+      console.log("moo");
     } else {
-      this.timeoutID && clearTimeout(this.timeoutID);
       this.setState({text:"",dataSource: this.ds.cloneWithRows([])});
     }
   }
 
   switchChange(switchButton){
     this.setState({flag:switchButton});
-    this.getInternetData(this.state.text);
+    this.getData(this.state.text);
   }
 
-  getInternetData(keyWord){
-    this.setState({isLoading:true});
-    fetch(this._getUrlForQuery(keyWord))
-    .then((response) => response.json())
-    .then((data)=>{
-      console.log(data);
-      let _books = data.books.filter(
-        (book)=>{ if(!this.state.flag || book.rating.average >= 8.0) return true; else return false;}
-      );
-      this.setState({dataSource:this.ds.cloneWithRows(_books),isLoading:false});
-      this.isLoading = false;
-    })
-    .catch((error) => {
-      console.log("getInternetData function error: "+error);
-    });
+  getData(keyWord){
+    if(keyWord){ //There are keywords in TextInput.
+
+      if(!cache.dataForQuery[keyWord]){ //New keywords.
+
+        console.log(this._getUrlForQuery(keyWord));
+        this.setState({isLoading:true});
+        fetch(this._getUrlForQuery(keyWord))
+        .then((response) => response.json())
+        .then((data)=>{
+          console.log(data);
+          cache.totalForQuery[keyWord] = data.total;
+          cache.dataForQuery[keyWord] = data.books;
+          console.log(data.books);
+          let _books = data.books.filter(
+            (book)=>{ if(!this.state.flag || book.rating.average >= 8.0) return true; else return false;}
+          );
+          if (this.state.text !== keyWord) {
+            return;// do not update state if the query is stale(过时的)
+          }
+          this.setState({dataSource:this.ds.cloneWithRows(_books),isLoading:false});
+        })
+        .catch((error) => {
+          this.setState({dataSource:this.ds.cloneWithRows([]),isLoading:false})
+          console.log("get data function error: "+error);
+        });
+
+      } else {  //keywords have been queried.query data for keywords are cached.
+        let _books = cache.dataForQuery[keyWord].filter(
+          (book)=>{ if(!this.state.flag || book.rating.average >= 8.0) return true; else return false;}
+        );
+        this.setState({dataSource:this.ds.cloneWithRows(_books)});
+      }
+
+    } else {  //The TextInput is blank
+      this.setState({dataSource:this.ds.cloneWithRows([])});
+    }
+
   }
 
   selectBook(book){
     if (Platform.OS === 'ios') {
-      console.log(book);
       this.props.navigator.push({
         title: book.title,
         component: BookScreen,
         passProps: {book},
       });
     }
+  }
+
+  listviewEndReached(){
+    console.log("listviewEndReached");
+    let keyWord = this.state.text;
+    if(cache.dataForQuery[keyWord]){
+      this.setState({isLoadingTail:true});
+      fetch(this._getUrlForQuery(keyWord,cache.dataForQuery[keyWord].length+1))
+      .then((response) => response.json())
+      .then((data)=>{
+        let dataForMovies = cache.dataForQuery[keyWord].slice();
+        if(!data.books){
+          this.setState(isLoadingTail:false);
+          return;
+        } else{
+          for(let i in data.books){
+            dataForMovies.push(data.books[i]);
+          }
+        }
+        cache.dataForQuery[keyWord] = dataForMovies;
+        let _books = dataForMovies.filter(
+          (book)=>{ if(!this.state.flag || book.rating.average >= 8.0) return true; else return false;}
+        );
+        if (this.state.text !== keyWord) { return; } // do not update state if the query is stale(过时的)
+        this.setState({dataSource:this.ds.cloneWithRows(_books),isLoading:false});
+      })
+      .catch((error) => {
+        this.setState({isLoading:false})
+        console.log("get data function error: "+error);
+      });
+    }
+  }
+
+  renderFooter(){
+    console.log("renderFooter");
+    if (!this.state.isLoadingTail) {
+      return <View style={styles.scrollSpinner} />;
+    }
+
+    return <ActivityIndicator style={styles.scrollSpinner} />;
   }
 
   render() {
@@ -161,25 +234,20 @@ class MainPage extends Component {
           <ListView
             ref="listview"
             enableEmptySections={true}
-            renderSeparator={
-              (sectionID,rowID,adjacentRowHighlighted)=>
-                <View key={'sep_'+sectionID+'_'+rowID} style={styles.rowSeparator}></View>
+            renderSeparator={(sectionID,rowID,adjacentRowHighlighted)=>
+              <View key={'sep_'+sectionID+'_'+rowID} style={styles.rowSeparator}></View>
               }
+            renderFooter={this.renderFooter.bind(this)}
+            onEndReached={this.listviewEndReached.bind(this)}
             dataSource={this.state.dataSource}
-            renderRow={
-              (book)=>
-                <BookCell
-                  key={book.id}
-                  onSelect={()=>this.selectBook(book)}
-                  book={book}
-                />
+            renderRow={(book)=><BookCell key={book.id} onSelect={()=>this.selectBook(book)} book={book}/>
             }
           />
         </View>
       </ScrollView>
     );
   }
-};
+}
 
 class filterableBookList extends React.Component {
   render() {
@@ -266,6 +334,9 @@ var styles = StyleSheet.create({
   },
   spinner: {
     width: 30,
+  },
+  scrollSpinner: {
+    marginVertical: 20,
   },
 });
 
