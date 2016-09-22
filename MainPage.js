@@ -15,6 +15,16 @@ var cache = {
 var LOADING = {};
 
 class BookCell extends Component{
+  constructor(props){
+    super(props);
+    this.selectBook = this.selectBook.bind(this);
+  }
+  selectBook(){
+      this.props.navigator.push({
+        title: this.props.book.title,
+        book: this.props.book,
+      });
+  }
   render(){
     var TouchableElement = TouchableHighlight;
     if (Platform.OS === 'android') {
@@ -22,7 +32,7 @@ class BookCell extends Component{
     }
     return (
       <View style={styles.BookCellPadding}>
-        <TouchableElement onPress={this.props.onSelect}>
+        <TouchableElement onPress={this.selectBook}>
           <View style={styles.container}>
             <Image source={{uri:this.props.book.image}} style={[styles.base, {overflow: 'hidden'}]}/>
             <View style={styles.rightContainer}>
@@ -58,7 +68,7 @@ export default class MainPage extends Component {
   }
 
   componentDidMount(){
-    this.textChange("life");
+    !this.props.tag ? this.textChange("life") : this.textChange(this.props.tag);
   }
 
   textChange(input){
@@ -66,9 +76,7 @@ export default class MainPage extends Component {
     this.timeoutID && clearTimeout(this.timeoutID);
     if(key){
       this.setState({text:key});
-      //console.log("mark");
       this.timeoutID = setTimeout(() => this.getData(key), 500);
-      //console.log("moo");
     } else {
       this.setState({text:"",dataSource: this.ds.cloneWithRows([])});
     }
@@ -81,16 +89,12 @@ export default class MainPage extends Component {
 
   getData(keyWord,switchStatus){
       if(!cache.dataForQuery[keyWord]){ //New keywords.
-
-        //console.log(this._getUrlForQuery(keyWord));
         this.setState({isLoading:true});
         fetch(this._getUrlForQuery(keyWord))
         .then((response) => response.json())
         .then((data)=>{
-          //console.log(data);
           cache.totalForQuery[keyWord] = data.total;
-          cache.dataForQuery[keyWord] = data.books;
-          //console.log(data.books);
+          cache.dataForQuery[keyWord] = data.books
           let _books = data.books.filter(
             (book)=>{ if(!this.state.flag || book.rating.average >= 8.0) return true; else return false;}
           );
@@ -100,8 +104,7 @@ export default class MainPage extends Component {
           this.setState({dataSource:this.ds.cloneWithRows(_books),isLoading:false});
         })
         .catch((error) => {
-          this.setState({dataSource:this.ds.cloneWithRows([]),isLoading:false})
-          //console.log("get data function error: "+error);
+          this.setState({dataSource:this.ds.cloneWithRows([]),isLoading:false});
         });
 
       } else {  //keywords have been queried.query data for keywords are cached.
@@ -113,19 +116,7 @@ export default class MainPage extends Component {
 
   }
 
-  selectBook(book){
-    if (Platform.OS === 'ios') {
-      this.props.navigator.push({
-        title: book.title,
-        component: BookScreen,
-        passProps: {book},
-      });
-    }
-  }
-
   onEndReached(){
-    console.log("listviewEndReached");
-
     let keyWord = this.state.text;
     let flag = this.state.flag;
     if(this.state.isLoadingTail || LOADING[keyWord])return;
@@ -136,7 +127,6 @@ export default class MainPage extends Component {
       fetch(this._getUrlForQuery(keyWord,cache.dataForQuery[keyWord].length+1))
       .then((response) => response.json())
       .then((data)=>{
-        console.log(this._getUrlForQuery(keyWord,cache.dataForQuery[keyWord].length+1),data);
         let dataForBooks = cache.dataForQuery[keyWord].slice();
         for(let i in data.books){dataForBooks.push(data.books[i]);}
         cache.dataForQuery[keyWord] = dataForBooks;
@@ -146,7 +136,6 @@ export default class MainPage extends Component {
         if (this.state.text !== keyWord || this.state.flag != flag) { return; } // do not update state if the query is stale(过时的)
         this.setState({dataSource:this.ds.cloneWithRows(_books),isLoadingTail:false});
         LOADING[keyWord] = false;
-        console.log(cache.dataForQuery[keyWord]);
       })
       .catch((error) => {
         console.log(error);
@@ -168,8 +157,8 @@ export default class MainPage extends Component {
   render() {
     console.log('----------render---------');
     return (
-      <ScrollView style={[styles.MainContainer,{padding:5}]}>
-        <Logo style={styles.MainContainer}/>
+      <View style={styles.MainContainer}>
+        <Logo/>
         <View style={styles.searchBar}>
         <TextInput
           style={styles.searchBarInput}
@@ -190,7 +179,7 @@ export default class MainPage extends Component {
           />
           <Text style={{fontSize:20,padding:8}}>8星以上</Text>
         </View>
-        <View style={{paddingTop: 5}}>
+        <View style={{flex:1,paddingTop: 5}}>
           <ListView
             ref="listview"
             initialListSize={20}
@@ -202,19 +191,23 @@ export default class MainPage extends Component {
             renderFooter={this.renderFooter.bind(this)}
             onEndReached={this.onEndReached.bind(this)}
             dataSource={this.state.dataSource}
-            renderRow={(book)=><BookCell key={book.id} onSelect={()=>this.selectBook(book)} book={book}/>}
+            renderRow={(book)=><BookCell key={book.id} navigator={this.props.navigator} book={book}/>}
             automaticallyAdjustContentInsets={false}
             keyboardDismissMode="on-drag"
             keyboardShouldPersistTaps={true}
             showsVerticalScrollIndicator={false}
           />
         </View>
-      </ScrollView>
+      </View>
     );
   }
 }
 
 var styles = StyleSheet.create({
+  MainContainer:{
+    flex:1,
+    paddingTop:60,
+  },
   BookCellPadding:{
     padding:5
   },
